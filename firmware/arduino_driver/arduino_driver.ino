@@ -25,12 +25,12 @@ float linear = 0.0;
 ///////////////////////////////////////////////////////////////////////////////////////////
 #define left_motor_forward_pin 5
 #define left_motor_backward_pin 6
-#define left_encoder_pin 2
+#define left_encoder_pin 0
 
 
 #define right_motor_forward_pin 11
 #define right_motor_backward_pin 10
-#define right_encoder_pin 3
+#define right_encoder_pin 1
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 int motor_speed[MOTOR_COUNT] = {0, 0};
@@ -52,8 +52,8 @@ void setup()
     pinMode(right_motor_forward_pin, OUTPUT);
     pinMode(right_motor_backward_pin, OUTPUT);
 
-    attachInterrupt(digitalPinToInterrupt(left_encoder_pin), left_encoder, ENCODER_MODE);
-    attachInterrupt(digitalPinToInterrupt(right_encoder_pin), right_encoder, ENCODER_MODE);
+    attachInterrupt(left_encoder_pi, left_encoder, ENCODER_MODE);
+    attachInterrupt(right_encoder_pin, right_encoder, ENCODER_MODE);
 
 }
 
