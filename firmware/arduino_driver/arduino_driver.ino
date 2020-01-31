@@ -1,25 +1,36 @@
-//#include <ros.h>
 ///////////////////////////////////////////////////////////////////////////////////////////
 #define LEFT 0
 #define RIGHT 1
+
 #define FORWARD true
 #define BACKWARD false
+
 #define LAST 2
 #define CURRENT 1
 #define NEXT 3
 
+#define LINEAR  0
+#define ANGULAR 1
+
+#define FORLENTH 0
+#define FORSPEED 1
+ 
 #define MOTOR_COUNT 2
+#define MOTOR_REDUCTION 1/17
 #define MOTOR_MAX_SPEED 255 
 #define MOTOR_MIN_SPEED 0
 ///////////////////////////////////////////////////////////////////////////////////////////
 #define ENCODER_MODE RISING
+#define ENCODER_TIKS 170
 ///////////////////////////////////////////////////////////////////////////////////////////
 #define ROBOT_WIDTH_M 20
 #define WHEEL_DEAMETR_M 20
 const float WHEEL_LENTH = WHEEL_DEAMETR_M * PI;
 
-float angular = 0.0;
-float linear = 0.0;
+double robot_real_speed[2] = {0.0 /*LINEAR*/, 0.0 /*ANGULAR*/};
+double robot_route = 0.0;
+double angular = 0.0;
+double linear = 0.0;
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -37,13 +48,16 @@ int motor_speed[MOTOR_COUNT] = {0, 0};
 bool motor_dir[MOTOR_COUNT] = {0, 0};
 double motor_real_speed[MOTOR_COUNT] = {0.0, 0.0};
 
-unsigned int encoder_tik_time[MOTOR_COUNT][3] = 
+ unsigned long encoder_tik_time[MOTOR_COUNT][3] = 
 {
-    {0, 0, 0},
-    {0, 0, 0}
+    {0 /*LEFT*/, 0 /* currnet*/, 0 /*last*/},
+    {0 /*RIGHT*/, 0 /* currnet*/, 0 /*last*/}
 };
-
-
+unsigned int encoder_tiks[MOTOR_COUNT][2] = 
+{
+    {0, 0},
+    {0, 0}
+};
 ///////////////////////////////////////////////////////////////////////////////////////////
 void setup()
 {
@@ -55,21 +69,36 @@ void setup()
     attachInterrupt(left_encoder_pi, left_encoder, ENCODER_MODE);
     attachInterrupt(right_encoder_pin, right_encoder, ENCODER_MODE);
 
-}
-
-void loop()
-{
-
+    encoder_tik_time[LEFT][LAST] = millis();
+    encoder_tik_time[RIGHT][LAST] = millis();
 }
 
 void left_encoder()
 {
-    encoder_tik_time[LEFT][CURRENT] = millis() - encoder_tik_time[LEFT][LAST];
+    encoder_tiks[LEFT][FORSPEED]++;
+    encoder_tiks[LEFT][FORLENTH]++;
+    encoder_tik_time[LEFT][CURRENT] = millis() - encoder_tik_time[LEFT][LAST];  
+
+    if (encoder_tik_time[LEFT][CURRENT] >= 100)
+    {
+        motor_real_speed[LEFT] = encoder_tiks[LEFT][FORSPEED] * 60000 / encoder_tik_time[LEFT][CURRENT]; 
+        encoder_tiks[LEFT][FORSPEED] = 0;
+        encoder_tik_time[LEFT][LAST] = millis();
+    }
 }
 
 void right_encoder()
 {
+    encoder_tiks[RIGHT][FORSPEED]++;
+    encoder_tiks[RIGHT][FORLENTH]++;
     encoder_tik_time[RIGHT][CURRENT] = millis() - encoder_tik_time[RIGHT][LAST];
+    
+    if (encoder_tik_time[RIGHT][CURRENT] >= 100)
+    {
+        motor_real_speed[RIGHT] = encoder_tiks[RIGHT][FORSPEED] * 60000 / encoder_tik_time[RIGHT][CURRENT]; 
+        encoder_tiks[RIGHT][FORSPEED] = 0;
+        encoder_tik_time[RIGHT][LAST] = millis();
+    }
 }
 
 void motor_controller(bool Ldir_ = FORWARD, int Lspeed_ = 0, int Rspeed_ = 0, bool Rdir_ = FORWARD)
@@ -108,3 +137,17 @@ void motor_controller(bool Ldir_ = FORWARD, int Lspeed_ = 0, int Rspeed_ = 0, bo
     }
 
 }
+
+void calculate_real_robot()
+{
+    robot_real_speed[LINEAR] = (motor_real_speed[LEFT] + motor_real_speed[RIGHT]) / 2;
+    robot_real_speed[ANGULAR] = (motor_real_speed[RIGHT] - motor_real_speed[LEFT]) / ROBOT_WIDTH_M;
+    robot_route = WHEEL_DEAMETR_M * PI * (((encoder_tiks[LEFT][FORLENTH] + encoder_tiks[RIGHT][FORLENTH]) / 2) / ENCODER_TIKS);
+}
+
+void loop()
+{
+
+}
+
+
