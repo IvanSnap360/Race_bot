@@ -9,6 +9,8 @@
 #define CURRENT 1
 #define NEXT 3
 
+#define MY 1
+#define REAL 0
 #define LINEAR  0
 #define ANGULAR 1
 
@@ -27,21 +29,24 @@
 #define WHEEL_DEAMETR_M 20
 const float WHEEL_LENTH = WHEEL_DEAMETR_M * PI;
 
-double robot_real_speed[2] = {0.0 /*LINEAR*/, 0.0 /*ANGULAR*/};
+double robot_speed[2][2] = 
+{   
+    {0/*REAL*/, 0/*MY*/},
+    {0.0 /*LINEAR*/, 0.0 /*ANGULAR*/}
+};
 double robot_route = 0.0;
-double angular = 0.0;
-double linear = 0.0;
+
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 #define left_motor_forward_pin 5
 #define left_motor_backward_pin 6
-#define left_encoder_pin 0
+#define left_encoder_pin 2
 
 
 #define right_motor_forward_pin 11
 #define right_motor_backward_pin 10
-#define right_encoder_pin 1
+#define right_encoder_pin 3
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 int motor_speed[MOTOR_COUNT] = {0, 0};
@@ -66,8 +71,9 @@ void setup()
     pinMode(right_motor_forward_pin, OUTPUT);
     pinMode(right_motor_backward_pin, OUTPUT);
 
-    attachInterrupt(left_encoder_pi, left_encoder, ENCODER_MODE);
-    attachInterrupt(right_encoder_pin, right_encoder, ENCODER_MODE);
+    attachInterrupt(digitalPinToInterrupt(left_encoder_pin), left_encoder, ENCODER_MODE);
+    attachInterrupt(digitalPinToInterrupt(right_encoder_pin), right_encoder, ENCODER_MODE);
+    attachInterrupt(digitalPinToInterrupt(left_encoder_pin), calculate_real_robot, CHANGE);
 
     encoder_tik_time[LEFT][LAST] = millis();
     encoder_tik_time[RIGHT][LAST] = millis();
@@ -140,13 +146,14 @@ void motor_controller(bool Ldir_ = FORWARD, int Lspeed_ = 0, int Rspeed_ = 0, bo
 
 void calculate_real_robot()
 {
-    robot_real_speed[LINEAR] = (motor_real_speed[LEFT] + motor_real_speed[RIGHT]) / 2;
-    robot_real_speed[ANGULAR] = (motor_real_speed[RIGHT] - motor_real_speed[LEFT]) / ROBOT_WIDTH_M;
+    robot_speed[REAL][LINEAR] = ((motor_real_speed[LEFT] + motor_real_speed[RIGHT]) / 2) * MOTOR_REDUCTION;
+    robot_speed[REAL][ANGULAR] = ((motor_real_speed[RIGHT] - motor_real_speed[LEFT]) / ROBOT_WIDTH_M) * MOTOR_REDUCTION;
     robot_route = WHEEL_DEAMETR_M * PI * (((encoder_tiks[LEFT][FORLENTH] + encoder_tiks[RIGHT][FORLENTH]) / 2) / ENCODER_TIKS);
 }
 
 void loop()
 {
+
 
 }
 
